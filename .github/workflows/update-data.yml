@@ -3,7 +3,7 @@ on:
   schedule:
     # - cron: '0 4/12 * * *'
     # TEST
-    - cron: '15 15 25 11 *'
+    - cron: '0 5/12 * * *'
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -41,6 +41,6 @@ jobs:
           git add .
           git commit -m $(cat ../BATCH_NO) || echo No updates
           git remote set-url origin https://SilentDepth:$GITHUB_TOKEN@github.com/SilentDepth/kpcc-stats-data.git
-          git push origin
+          git push origin HEAD:master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

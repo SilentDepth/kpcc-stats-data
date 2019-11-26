@@ -1,9 +1,7 @@
 name: Update Data
 on:
   schedule:
-    # - cron: '0 4/12 * * *'
-    # TEST
-    - cron: '0 5/12 * * *'
+    - cron: '0 4/12 * * *'
 jobs:
   test:
     runs-on: ubuntu-latest

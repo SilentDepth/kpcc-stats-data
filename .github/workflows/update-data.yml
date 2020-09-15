@@ -1,7 +1,7 @@
 name: Update Data
 on:
   schedule:
-    - cron: '40 12 * * *'
+    - cron: '53 12 * * *'
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -16,7 +16,7 @@ jobs:
         ref: master
     - name: Run crawler
       run: |
-        cd ../crawler
+        cd ./crawler
         yarn
         node .
     - name: Create git commit and push

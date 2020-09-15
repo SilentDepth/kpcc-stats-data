@@ -1,7 +1,7 @@
 name: Update Data
 on:
   schedule:
-    - cron: '7 13 * * *'
+    - cron: '0 10/12 * * *'
 jobs:
   update:
     runs-on: ubuntu-latest

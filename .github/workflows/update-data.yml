@@ -1,44 +1,42 @@
 name: Update Data
 on:
   schedule:
-    - cron: '0 4/12 * * *'
+    - cron: '35 5 * * *'
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      # setup node.js environment
-      - uses: actions/setup-node@v1
-        with:
-          node-version: '12.x'
-      # checkout program branch
-      # pwd is now @/repo
-      - uses: actions/checkout@v1
-        with:
-          ref: program
-          fetch_depth: 1
-          path: repo
-      # copy program to outside since checkout will reset workspace
-      - run: |
-          cp -R . ../program
-      # checkout storage branch
-      # pwd is now @/storage
-      - uses: actions/checkout@v1
-        with:
-          ref: master
-          fetch_depth: 1
-          path: storage
-      # run the program
-      - run: |
-          cd ../program
-          yarn
-          node .
-      # create git commit and push
-      - run: |
-          git config user.name 'kpcc-updater'
-          git config user.email ''
-          git add .
-          git commit -m $(cat ../BATCH_NO) || echo No updates
-          git remote set-url origin https://SilentDepth:$GITHUB_TOKEN@github.com/SilentDepth/kpcc-stats-data.git
-          git push origin HEAD:master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Setup Node.js
+      uses: actions/setup-node@v1
+      with:
+        node-version: '14.x'
+    - name: Checkout program branch
+      uses: actions/checkout@v2
+      with:
+        ref: program
+        path: repo
+    # pwd is now @/repo
+    - name: Copy program files to outside to remain avaialbe after next checkout
+      run: |
+        cp -R . ../program
+    - name: Checkout storage branch
+      uses: actions/checkout@v2
+      with:
+        ref: master
+        path: storage
+    # pwd is now @/storage
+    - name: Run the program
+      run: |
+        cd ../program
+        yarn
+        node .
+    - name: Create git commit and push
+      run: |
+        git config user.name 'kpcc-updater'
+        git config user.email ''
+        git add .
+        git commit -m $(cat ../BATCH_NO) || echo No updates
+        git remote set-url origin https://SilentDepth:$GITHUB_TOKEN@github.com/SilentDepth/kpcc-stats-data.git
+        git push origin HEAD:master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

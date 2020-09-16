@@ -4,7 +4,9 @@ const dayjs = require('dayjs')
 const fetch = require('node-fetch')
 const pako = require('pako')
 
-const DOMAIN = 'https://stats.craft.moe'
+const __DEV__ = process.env.NODE_ENV === 'development'
+const DOMAIN = __DEV__ ? 'http://localhost:3000' : 'https://stats.craft.moe'
+const MAX_RETRY = 2
 
 // Directory structure:
 //
@@ -18,7 +20,7 @@ const DOMAIN = 'https://stats.craft.moe'
 
 const BATCH_NO = dayjs().format('YYYYMMDD_HHmmss')
 const STORAGE_DIR = resolve(__dirname, '..')
-const BATCH_DIR = resolve(STORAGE_DIR, 'batches', BATCH_NO)
+const BATCH_DIR = resolve(STORAGE_DIR, __DEV__ ? 'batches-dev' : 'batches', BATCH_NO)
 
 void async function main() {
   /* 1. prepare all the directories and files we may need */
@@ -36,6 +38,10 @@ void async function main() {
   /* 3. fetch all the stats.json to: 1) store updated data; 2) collect banned uuids */
 
   const playersJson = await fetchFile('/data/players.json')
+  if (!playersJson) {
+    console.error('Failed to fetch player list')
+    process.exit(1)
+  }
   const playersJsonLength = playersJson.length
   const uuidsBanned = []
   let hasUpdate = false
@@ -43,6 +49,9 @@ void async function main() {
   for (const [idx, {uuid}] of Object.entries(playersJson)) {
     const lastSeen = (lastPlayersJson.find(p => p.uuid === uuid) || {seen: 0}).seen
     const statsJson = await fetchFile(`/data/${uuid}/stats.json`, +idx + 1, playersJsonLength)
+    if (!statsJson) {
+      continue
+    }
     if (statsJson.data.seen !== lastSeen) {
       hasUpdate = true
       updateCount++
@@ -66,7 +75,11 @@ void async function main() {
   /* 5. if any update stored, write other meta json files and index.json */
 
   if (hasUpdate) {
-    writeFile('info.json', await fetchFile('/data/info.json'))
+    await fetchFile('/data/info.json').then(data => {
+      if (data) {
+        writeFile('info.json', data)
+      }
+    })
     writeFile('players.json.gz', playersJson)
     indexJson.latest_batch = BATCH_NO
     fs.outputJsonSync(INDEX_JSON, indexJson)
@@ -81,7 +94,18 @@ async function fetchFile(url, progress, total) {
     `Fetching ${url}`,
     progress ? `(${progress}${total ? `/${total}` : ''})` : null,
   ].filter(Boolean).join(' '))
-  return await fetch(url).then(res => res.json())
+  let retryCount = 0
+  do {
+    try {
+      if (retryCount) {
+        console.log(`  - Retry ${retryCount}/${MAX_RETRY}`)
+      }
+      return await fetch(url).then(res => res.json())
+    } catch (err) {
+      console.warn(`    ${err.message}`)
+    }
+  } while (++retryCount <= MAX_RETRY)
+  console.warn('  - Give up')
 }
 
 function readFile(filePath) {

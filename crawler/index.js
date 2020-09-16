@@ -36,12 +36,13 @@ void async function main() {
   /* 3. fetch all the stats.json to: 1) store updated data; 2) collect banned uuids */
 
   const playersJson = await fetchFile('/data/players.json')
+  const playersJsonLength = playersJson.length
   const uuidsBanned = []
   let hasUpdate = false
   let updateCount = 0
-  for (const {uuid} of playersJson) {
+  for (const [idx, {uuid}] of Object.entries(playersJson)) {
     const lastSeen = (lastPlayersJson.find(p => p.uuid === uuid) || {seen: 0}).seen
-    const statsJson = await fetchFile(`/data/${uuid}/stats.json`)
+    const statsJson = await fetchFile(`/data/${uuid}/stats.json`, +idx + 1, playersJsonLength)
     if (statsJson.data.seen !== lastSeen) {
       hasUpdate = true
       updateCount++
@@ -74,9 +75,12 @@ void async function main() {
   console.log('Done')
 }()
 
-async function fetchFile(url) {
+async function fetchFile(url, progress, total) {
   url = DOMAIN + url
-  console.log(`Fetching ${url}`)
+  console.log([
+    `Fetching ${url}`,
+    progress ? `(${progress}${total ? `/${total}` : ''})` : null,
+  ].filter(Boolean).join(' '))
   return await fetch(url).then(res => res.json())
 }
 

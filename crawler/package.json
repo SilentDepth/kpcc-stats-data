@@ -6,7 +6,7 @@
   "dependencies": {
     "dayjs": "^1.8.17",
     "fs-extra": "^8.1.0",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.7",
     "pako": "^1.0.10"
   },
   "devDependencies": {
